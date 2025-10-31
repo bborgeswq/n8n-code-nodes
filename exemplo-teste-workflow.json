@@ -1,0 +1,306 @@
+{
+  "name": "Workflow Completo - Processar Documentos Base64 para Google Drive",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "mode": "jsonData",
+        "jsonData": "={{ $json }}"
+      },
+      "id": "set-json-input",
+      "name": "Set Input Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [450, 300],
+      "notes": "Cole aqui o conteúdo do seu arquivo 'analise doc base64.txt'"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Código do arquivo: decode-base64-documents.js\n// Cole todo o conteúdo do arquivo aqui"
+      },
+      "id": "decode-base64",
+      "name": "1. Decodificar Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "notes": "Decodifica documentos base64 e prepara metadados"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Código do arquivo: prepare-html-for-pdf-conversion.js\n// Cole todo o conteúdo do arquivo aqui"
+      },
+      "id": "prepare-pdf",
+      "name": "2. Preparar para PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300],
+      "notes": "Limpa HTML e configura conversão PDF"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1050, 300],
+      "notes": "Processa 1 documento por vez para não sobrecarregar a API"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/from/html",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $credentials.pdfCoApi.apiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"html\": \"{{ $json.htmlContent }}\",\n  \"name\": \"{{ $json.nomeArquivoPDF }}\",\n  \"margins\": \"20px\",\n  \"paperSize\": \"A4\",\n  \"orientation\": \"Portrait\",\n  \"printBackground\": true,\n  \"async\": false\n}",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "convert-to-pdf",
+      "name": "3. Converter HTML→PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 300],
+      "notes": "Usa API PDF.co para converter HTML em PDF"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processa a resposta da API e prepara para o Google Drive\nconst items = $input.all();\nconst processed = [];\n\nfor (const item of items) {\n  try {\n    // A resposta da PDF.co contém a URL do PDF gerado\n    const pdfUrl = item.json.url;\n    \n    if (!pdfUrl) {\n      throw new Error('URL do PDF não encontrada na resposta da API');\n    }\n\n    // Baixa o PDF da URL fornecida\n    const response = await fetch(pdfUrl);\n    const pdfBuffer = await response.arrayBuffer();\n    const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');\n\n    processed.push({\n      json: {\n        numeroCNJ: item.json.numeroCNJ || 'N/A',\n        eventoNumero: item.json.eventoNumero || 'N/A',\n        nomeArquivo: item.json.nomeArquivoPDF || 'documento.pdf',\n        dataProcessamento: new Date().toISOString()\n      },\n      binary: {\n        data: {\n          data: pdfBase64,\n          mimeType: 'application/pdf',\n          fileName: item.json.nomeArquivoPDF || 'documento.pdf'\n        }\n      }\n    });\n\n    console.log(`✓ PDF baixado: ${item.json.nomeArquivoPDF}`);\n  } catch (error) {\n    console.error('Erro ao processar PDF:', error.message);\n  }\n}\n\nreturn processed;"
+      },
+      "id": "process-pdf-response",
+      "name": "4. Processar Resposta PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300],
+      "notes": "Baixa o PDF da URL fornecida pela API"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "upload",
+        "name": "={{ $json.nomeArquivo }}",
+        "resolveData": true,
+        "options": {
+          "keepRevisionForever": false
+        }
+      },
+      "id": "upload-to-drive",
+      "name": "5. Upload Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1650, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "sua-credential-id",
+          "name": "Google Drive Account"
+        }
+      },
+      "notes": "Faz upload do PDF no Google Drive\n\nConfigurações necessárias:\n1. Autenticar com Google OAuth2\n2. Definir pasta de destino (opcional)\n3. Ajustar permissões se necessário"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.erro }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-errors",
+      "name": "Tem Erro?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "log-success",
+      "name": "Log Sucesso",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2050, 200],
+      "notes": "✓ Documento processado com sucesso"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "log-error",
+      "name": "Log Erro",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2050, 400],
+      "notes": "✗ Erro ao processar documento\nVerifique os logs"
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Input Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Input Data": {
+      "main": [
+        [
+          {
+            "node": "1. Decodificar Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Decodificar Base64": {
+      "main": [
+        [
+          {
+            "node": "2. Preparar para PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Preparar para PDF": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "3. Converter HTML→PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Converter HTML→PDF": {
+      "main": [
+        [
+          {
+            "node": "4. Processar Resposta PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Processar Resposta PDF": {
+      "main": [
+        [
+          {
+            "node": "5. Upload Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Upload Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Tem Erro?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Erro?": {
+      "main": [
+        [
+          {
+            "node": "Log Erro",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "exemplo"
+  },
+  "tags": [
+    {
+      "id": "processos-juridicos",
+      "name": "Processos Jurídicos"
+    },
+    {
+      "id": "pdf-conversion",
+      "name": "PDF Conversion"
+    },
+    {
+      "id": "google-drive",
+      "name": "Google Drive"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1.0.0"
+}

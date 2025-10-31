@@ -1,0 +1,133 @@
+{
+  "name": "Converter HTML para PDF via API",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloudconvert.com/v2/convert",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer SUA_API_KEY_AQUI"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "input",
+              "value": "={{ $json.htmlContent }}"
+            },
+            {
+              "name": "output_format",
+              "value": "pdf"
+            },
+            {
+              "name": "filename",
+              "value": "={{ $json.nomeArquivoPDF }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "name": "HTTP Request - CloudConvert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 300],
+      "notes": "Alternativa 1: CloudConvert API\nDocumentação: https://cloudconvert.com/api/v2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/from/html",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "SUA_PDF_CO_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"html\": \"{{ $json.htmlContent }}\",\n  \"name\": \"{{ $json.nomeArquivoPDF }}\",\n  \"margins\": \"20px\",\n  \"paperSize\": \"A4\",\n  \"orientation\": \"Portrait\",\n  \"printBackground\": true,\n  \"header\": \"<div style='text-align:center;font-size:10px;'>Processo: {{ $json.numeroCNJ }}</div>\",\n  \"footer\": \"<div style='text-align:center;font-size:10px;'>Página {page} de {pages}</div>\"\n}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "name": "HTTP Request - PDF.co",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 500],
+      "notes": "Alternativa 2: PDF.co API\nDocumentação: https://apidocs.pdf.co"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yakpdf.p.rapidapi.com/pdf",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-RapidAPI-Key",
+              "value": "SUA_RAPIDAPI_KEY"
+            },
+            {
+              "name": "X-RapidAPI-Host",
+              "value": "yakpdf.p.rapidapi.com"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"source\": {\n    \"html\": \"{{ $json.htmlContent }}\"\n  },\n  \"pdf\": {\n    \"format\": \"A4\",\n    \"printBackground\": true,\n    \"margin\": {\n      \"top\": \"20mm\",\n      \"right\": \"15mm\",\n      \"bottom\": \"20mm\",\n      \"left\": \"15mm\"\n    }\n  }\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "name": "HTTP Request - YakPDF (RapidAPI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 700],
+      "notes": "Alternativa 3: YakPDF via RapidAPI\nGratuito até 100 PDFs/mês\nDocumentação: https://rapidapi.com/yakpdf/api/yakpdf"
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
