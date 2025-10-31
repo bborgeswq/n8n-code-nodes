@@ -1,0 +1,88 @@
+{
+  "exemplo": "Output do Code Node depois de remover base64",
+  "dados": [
+    {
+      "numero_cnj": "5002898-16.2024.8.21.0060",
+      "partes": [
+        {
+          "texto": "MARTINS ATACADO E LOGISTICA EIRELI (01.601.747/0001-68) - Pessoa Jurídica...",
+          "tipo": "autor"
+        },
+        {
+          "texto": "MARTINS ATACADO E LOGISTICA EIRELI (01.601.747/0001-68) - Pessoa Jurídica...",
+          "tipo": "réu"
+        },
+        {
+          "texto": "JOAO ANTONIO CARGNELUTTI (093.969.180-91) - Pessoa Física",
+          "tipo": "perito"
+        }
+      ],
+      "total_prazos": 1,
+      "prazos": [
+        {
+          "evento_prazo_amarelo": {
+            "numero": 30,
+            "texto": "30 28/10/2025 17:20:27 Expedida/certificada a intimação eletrônica...",
+            "referencia_evento": 29,
+            "posicao": 19,
+            "classe": "infraTrClara infraEventoPrazoAberto"
+          },
+          "evento_referenciado": {
+            "numero": 29,
+            "texto": "29 28/10/2025 17:19:40 Juntada de peças digitalizadas...",
+            "documentos": [
+              {
+                "nome": "EMAIL1.html",
+                "tipo": "text/html",
+                "tamanho_bytes": 15631,
+                "tamanho_mb": "0.01",
+                "_base64_info": {
+                  "removido": true,
+                  "tamanho_original": 20841,
+                  "tamanho_kb": "20.35"
+                },
+                "comentario": "👆 Ao invés de ter 'conteudo_base64' com string gigante, agora tem '_base64_info' com metadados"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "numero_cnj": "5000827-02.2025.8.21.0094",
+      "partes": [
+        {
+          "texto": "BRUNO FABIANO KUBITZ CARDOSO (041.138.460-06)...",
+          "tipo": "autor"
+        }
+      ],
+      "total_prazos": 3,
+      "prazos": [
+        {
+          "evento_prazo_amarelo": {
+            "numero": 33,
+            "texto": "33 08/10/2025 12:53:23 Expedida/certificada a intimação eletrônica..."
+          },
+          "evento_referenciado": {
+            "numero": 30,
+            "texto": "30 08/10/2025 00:21:28 COMUNICAÇÕES...",
+            "documentos": [
+              {
+                "nome": "OFIC1.html",
+                "tipo": "text/html",
+                "tamanho_bytes": 15629,
+                "tamanho_mb": "0.01",
+                "_base64_info": {
+                  "removido": true,
+                  "tamanho_original": 20838,
+                  "tamanho_kb": "20.35"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "nota": "Este é o formato que o Code Node retorna. Agora você consegue ver a estrutura completa sem as strings base64 gigantes poluindo a visualização!"
+}
